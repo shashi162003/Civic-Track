@@ -1,8 +1,8 @@
 const vision = require('@google-cloud/vision');
-const path = require('path');
+const credentials = JSON.parse(process.env.GCP_CREDENTIALS_JSON);
 
 const client = new vision.ImageAnnotatorClient({
-    keyFilename: path.join(__dirname, '../config/gcp-credentials.json')
+    credentials
 });
 
 const analyzeImage = async (buffer) => {
