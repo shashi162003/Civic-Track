@@ -1,5 +1,6 @@
 const Comment = require('../models/Comment');
 const Report = require('../models/Report');
+const {createNotification} = require('../services/notificationService');
 
 const addComment = async(req, res) => {
     const {text} = req.body;
@@ -9,6 +10,11 @@ const addComment = async(req, res) => {
         const report = await Report.findById(reportId);
         if(!report) {
             return res.status(404).json({ message: 'Report not found' });
+        }
+
+        if (report.user.toString() !== req.user.id.toString()) {
+            const message = `A new comment has been added to your report: "${report.title}".`;
+            await createNotification(report.user, message, report._id);
         }
 
         const newComment = await Comment.create({

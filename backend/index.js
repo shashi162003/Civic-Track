@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const userRoutes = require("./routes/userRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const connectCloudinary = require("./config/cloudinary");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,6 +20,7 @@ connectCloudinary();
 
 app.use("/api/users", userRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get("/", (req, res) => {
     res.status(200).json({

@@ -59,4 +59,6 @@ const reportSchema = new mongoose.Schema({
     timestamps: true
 });
 
+reportSchema.index({ title: 'text', description: 'text' });
+
 module.exports = mongoose.model('Report', reportSchema);
