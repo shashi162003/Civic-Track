@@ -7,6 +7,7 @@ const userRoutes = require("./routes/userRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const connectCloudinary = require("./config/cloudinary");
 const notificationRoutes = require("./routes/notificationRoutes");
+const healthRoutes = require("./routes/healthRoutes");
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,6 +22,7 @@ connectCloudinary();
 app.use("/api/users", userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/health', healthRoutes);
 
 app.get("/", (req, res) => {
     res.status(200).json({
