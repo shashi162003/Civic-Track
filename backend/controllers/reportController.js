@@ -4,6 +4,7 @@ const {analyzeReport, moderateContent, findDuplicateReport, parseSearchQuery} = 
 const {analyzeImage} = require('../services/googleVisionService');
 const cloudinary = require('cloudinary').v2;
 const {createNotification} = require('../services/notificationService');
+const { addPoints } = require('../services/gamificationService');
 
 const createReport = async (req, res) => {
     const { description, latitude, longitude } = req.body;
@@ -91,6 +92,8 @@ const createReport = async (req, res) => {
                         coordinates: [lon, lat]
                     }
                 });
+
+                await addPoints(req.user.id, 'CREATE_REPORT');
 
                 res.status(201).json(newReport);
             }
@@ -199,7 +202,7 @@ const updateReportStatus = async(req, res) => {
         await report.save();
 
         const message = `The status of your report "${report.title}" has been updated to "${status}".`;
-        await createNotification(report.user, message, report._id);
+        await createNotification(report.user, message, { reportId: report._id });
 
         return res.status(200).json({ message: 'Report status updated successfully' });
     }
@@ -224,8 +227,11 @@ const upvoteReport = async (req, res) => {
             report.upvotes += 1;
         }
         await report.save();
+        if (!hasUpvoted) {
+            await addPoints(report.user, 'RECEIVE_UPVOTE');
+        }
         console.log(`Report upvoted successfully: ${report._id}`.blue);
-        return res.status(200).json({ message: 'Report upvoted successfully', report });
+        return res.status(200).json({ message: 'Vote updated successfully', upvotes: report.upvotes });
     }
     catch(error){
         console.error(`Error upvoting report: ${error.message}`.red);

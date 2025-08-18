@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket Tester</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Distress Call Tester</h1>
+    <p>User ID: <input type="text" id="userId" placeholder="Enter a user ID from DB"></p>
+    <button onclick="connect()">Connect</button>
+    <hr>
+    <h3>My Location</h3>
+    <p>Lat: <input type="text" id="lat" value="23.4140"> Lon: <input type="text" id="lon" value="85.4350"></p>
+    <button onclick="updateLocation()">Update My Location</button>
+    <hr>
+    <h3>Send SOS</h3>
+    <p>Message: <input type="text" id="sosMessage" value="I need help, I think I'm being followed."></p>
+    <button onclick="sendSOS()">Send SOS Call</button>
+    <hr>
+    <h2>Received Alerts:</h2>
+    <div id="logs"></div>
+
+    <script>
+        let socket;
+        const logs = document.getElementById('logs');
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) { alert('Please enter a User ID'); return; }
+            socket = io("http://localhost:4000", { 
+            query: { userId },
+            withCredentials: true
+        });
+            logs.innerHTML += `<p><i>Connecting with user ${userId}...</i></p>`;
+            socket.on('connect', () => { logs.innerHTML += `<p><b>Connected!</b></p>`; });
+            socket.on('distressAlert', (data) => {
+                logs.innerHTML += `<p style="color:red;"><b>ALERT! from ${data.fromUserId}:</b> ${data.summary} (Lat: ${data.latitude}, Lon: ${data.longitude})</p>`;
+            });
+        }
+
+        function updateLocation() {
+            const data = {
+                userId: document.getElementById('userId').value,
+                latitude: parseFloat(document.getElementById('lat').value),
+                longitude: parseFloat(document.getElementById('lon').value)
+            };
+            socket.emit('updateLocation', data);
+            logs.innerHTML += `<p>Sent location update.</p>`;
+        }
+
+        function sendSOS() {
+            const data = {
+                userId: document.getElementById('userId').value,
+                latitude: parseFloat(document.getElementById('lat').value),
+                longitude: parseFloat(document.getElementById('lon').value),
+                message: document.getElementById('sosMessage').value
+            };
+            socket.emit('distressCall', data);
+            logs.innerHTML += `<p><b>Sent SOS call!</b></p>`;
+        }
+    </script>
+</body>
+</html>
