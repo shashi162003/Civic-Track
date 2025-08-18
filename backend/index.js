@@ -18,12 +18,14 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 
+const origins = process.env.allowedOrigins.split(",");
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://127.0.0.1:5500", // Must be the specific origin
+        origin: origins,
         methods: ["GET", "POST"],
-        credentials: true // Allow credentials
+        credentials: true
     }
 });
 const initializeSocket = require('./socket/socketHandler');
