@@ -1,201 +1,306 @@
 # CivicConnect API Documentation
 
-Welcome to the official API documentation for CivicConnect.
-
-**Base URL:** `http://localhost:4000`
+**Base URL:** `http://localhost:5000`
 
 ---
-
 ## Authentication
 
-This API uses a Two-Factor Authentication (2FA) flow with JSON Web Tokens (JWT).
+Authentication is a two-step process using email OTPs and JWTs. Authenticated requests must include a JWT in the Authorization header.
 
-1.  **Login (`/api/users/login`):** A user submits their `email` and `password`. If valid, the server sends a One-Time Password (OTP) to their email.
-2.  **Verify OTP (`/api/users/verify-otp`):** The user submits their `email` and the `otp` they received.
-3.  **Receive JWT:** If the OTP is valid, the server returns a JWT. The token is also set in a secure, `httpOnly` cookie.
-4.  **Authenticated Requests:** For all private routes, the JWT must be included in the `Authorization` header.
-    * **Header:** `Authorization`
-    * **Value:** `Bearer <your_jwt_token>`
-
-### User Roles
-
-* **Citizen:** Can register, log in, create/view reports, upvote, and comment.
-* **Authority:** Can do everything a Citizen can, plus update the status of reports and view analytics.
-* **Admin:** Has all permissions.
+* **Header:** `Authorization`
+* **Value:** `Bearer <your_jwt_token>`
 
 ---
+## 1. Health Endpoints
 
-## Endpoints
+### `GET /api/health`
+Performs a deep health check on all critical services.
 
-### 1. Health
-
-#### `GET /api/health`
-* **Description:** Performs a deep health check on all critical services (Database, Cloudinary, AI Services).
 * **Access:** Public
-* **Success Response:** `200 OK` or `503 Service Unavailable` with a detailed status report.
-
-### 2. Authentication
-
-#### `POST /api/users/register`
-* **Description:** Registers a new user.
-* **Access:** Public
-* **Request Body:** `application/json`
+* **Success Response (`200 OK`):**
     ```json
     {
-      "name": "John Doe",
-      "email": "john.doe@example.com",
+        "overallStatus": "OK",
+        "timestamp": "2025-08-19T01:15:00.000Z",
+        "services": [
+            { "name": "Database", "status": "OK", "message": "Connected successfully" },
+            { "name": "Cloudinary", "status": "OK", "message": "Connected successfully" },
+            { "name": "OpenAI", "status": "OK", "message": "API key is valid" },
+            { "name": "GoogleVision", "status": "OK", "message": "Client configured" }
+        ]
+    }
+    ```
+* **Error Response (`503 Service Unavailable`):**
+    ```json
+    {
+        "overallStatus": "Error",
+        "timestamp": "2025-08-19T01:16:00.000Z",
+        "services": [
+            { "name": "Database", "status": "OK", "message": "Connected successfully" },
+            { "name": "Cloudinary", "status": "Error", "message": "Invalid API Key" },
+            { "name": "OpenAI", "status": "OK", "message": "API key is valid" },
+            { "name": "GoogleVision", "status": "OK", "message": "Client configured" }
+        ]
+    }
+    ```
+
+---
+## 2. Authentication Endpoints
+
+### `POST /api/users/register`
+Registers a new user in the system.
+
+* **Access:** Public
+* **Request Body:**
+    ```json
+    {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
       "password": "password123"
     }
     ```
-* **Success Response:** `201 Created`
+* **Success Response (`201 Created`):**
     ```json
     {
-      "_id": "60d0fe4f5311236168a109ca",
-      "name": "John Doe",
-      "email": "john.doe@example.com",
-      "role": "Citizen",
-      "message": "Registration successful. Please log in."
+        "_id": "68a33467bbc1341057d256aa",
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "role": "Citizen",
+        "message": "Registration successful. Please log in."
     }
     ```
-* **Error Response:** `400 Bad Request` if fields are missing or user exists.
+* **Error Response (`400 Bad Request`):**
+    ```json
+    { "message": "User already exists" }
+    ```
 
-#### `POST /api/users/login`
-* **Description:** First step of 2FA. Validates credentials and sends an OTP to the user's email.
+### `POST /api/users/login`
+Validates user credentials and sends an OTP to their registered email.
+
 * **Access:** Public
-* **Request Body:** `application/json`
+* **Request Body:**
     ```json
     {
-      "email": "john.doe@example.com",
+      "email": "jane.doe@example.com",
       "password": "password123"
     }
     ```
-* **Success Response:** `200 OK`
+* **Success Response (`200 OK`):**
     ```json
-    {
-      "success": true,
-      "message": "OTP sent to your email"
-    }
+    { "success": true, "message": "OTP sent to your email" }
     ```
-* **Error Response:** `401 Unauthorized` for invalid credentials.
+* **Error Response (`401 Unauthorized`):**
+    ```json
+    { "message": "Invalid email or password" }
+    ```
 
-#### `POST /api/users/verify-otp`
-* **Description:** Second step of 2FA. Verifies the OTP and returns a JWT.
+### `POST /api/users/verify-otp`
+Verifies the submitted OTP and, if valid, returns a JWT for session authentication.
+
 * **Access:** Public
-* **Request Body:** `application/json`
+* **Request Body:**
     ```json
     {
-      "email": "john.doe@example.com",
+      "email": "jane.doe@example.com",
       "otp": "123456"
     }
     ```
-* **Success Response:** `200 OK`
+* **Success Response (`200 OK`):**
     ```json
     {
         "message": "Login successful!",
-        "_id": "60d0fe4f5311236168a109ca",
-        "name": "John Doe",
-        "email": "john.doe@example.com",
-        "token": "ey..."
+        "_id": "68a33467bbc1341057d256aa",
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }
     ```
-* **Error Response:** `400 Bad Request` for invalid OTP.
+* **Error Response (`400 Bad Request`):**
+    ```json
+    { "message": "Invalid or expired OTP" }
+    ```
 
-### 3. Reports
+---
+## 3. Report Endpoints
 
-#### `POST /api/reports`
-* **Description:** Creates a new report. AI services automatically analyze the description and image.
-* **Access:** Private (Citizen, Authority, Admin)
+### `POST /api/reports`
+Creates a new civic issue report. The backend AI services automatically analyze the description and image.
+
+* **Access:** Private (Citizen+)
+* **Headers:** `Authorization: Bearer <token>`
 * **Request Body:** `multipart/form-data`
-    * `description` (Text): "There is a huge pothole..."
+    * `description` (Text): "A huge pile of garbage has been sitting on the corner of 5th and Main for over a week."
     * `latitude` (Text): "23.4143"
     * `longitude` (Text): "85.4354"
     * `image` (File): (select an image file)
-* **Success Response:** `201 Created` with the new report object.
-* **Error Response:** `400 Bad Request` (missing fields, spam), `409 Conflict` (duplicate found).
+* **Success Response (`201 Created`):** Returns the newly created report object.
+* **Error Responses:**
+    * `400 Bad Request`: `{ "message": "Description and location are required" }`
+    * `400 Bad Request`: `{ "message": "The content violates our community guidelines." }`
+    * `409 Conflict`: `{ "message": "This issue may have already been reported...", "duplicateReportId": "..." }`
 
-#### `GET /api/reports`
-* **Description:** Gets a list of all reports. Supports filtering and keyword search via query parameters.
+### `GET /api/reports`
+Retrieves a list of all reports, with support for filtering.
+
 * **Access:** Public
-* **Query Parameters (Optional):**
-    * `status`: (e.g., `Pending`, `Resolved`)
-    * `category`: (e.g., `Roads`, `Waste`)
-    * `severity`: (e.g., `High`, `Low`)
-    * `keyword`: (e.g., `pothole`)
-* **Example:** `/api/reports?status=Pending&keyword=garbage`
-* **Success Response:** `200 OK` with an array of report objects.
+* **Request Example:** `/api/reports?status=Pending&category=Waste`
+* **Success Response (`200 OK`):** Returns an array of report objects.
 
-#### `GET /api/reports/search`
-* **Description:** Performs an AI-powered Natural Language Processing (NLP) search.
+### `GET /api/reports/search`
+Performs an AI-powered Natural Language Processing (NLP) search on reports.
+
 * **Access:** Public
-* **Query Parameter:** `q`
-* **Example:** `/api/reports/search?q=show me unresolved high priority trash problems`
-* **Success Response:** `200 OK` with an array of matching report objects.
+* **Request Example:** `/api/reports/search?q=unresolved high priority trash problems`
+* **Success Response (`200 OK`):** Returns an array of matching report objects.
 
-#### `GET /api/reports/myreports`
-* **Description:** Gets all reports submitted by the currently logged-in user.
+### `GET /api/reports/myreports`
+Retrieves all reports submitted by the currently authenticated user.
+
 * **Access:** Private
-* **Success Response:** `200 OK` with an array of the user's report objects.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):** Returns an array of the user's report objects.
 
-#### `GET /api/reports/analytics` or `/api/reports/report/analytics`
-* **Description:** Gets aggregated analytics data.
-* **Access:** Private (Authority, Admin)
-* **Success Response:** `200 OK` with an analytics object.
+### `GET /api/reports/:id`
+Retrieves a single report by its unique ID.
+
+* **Access:** Public
+* **Request Example:** `/api/reports/68a33467bbc1341057d256bb`
+* **Success Response (`200 OK`):** Returns the full report object.
+* **Error Response (`404 Not Found`):** `{ "message": "Report not found" }`
+
+### `PUT /api/reports/:id/status`
+Updates the status of a specific report.
+
+* **Access:** Private (Authority+)
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body:**
     ```json
-    {
-      "totalReports": 15,
-      "statusCounts": { "Pending": 8, "Resolved": 7 },
-      "categoryCounts": { "Roads": 5, "Waste": 10 }
-    }
+    { "status": "In Progress" }
+    ```
+* **Success Response (`200 OK`):**
+    ```json
+    { "message": "Report status updated successfully" }
+    ```
+* **Error Response (`403 Forbidden`):** `{ "message": "User role 'Citizen' is not authorized..." }`
+
+### `POST /api/reports/:id/upvote`
+Toggles an upvote on a specific report for the authenticated user.
+
+* **Access:** Private
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):**
+    ```json
+    { "message": "Vote updated successfully", "upvotes": 15 }
     ```
 
-#### `GET /api/reports/:id`
-* **Description:** Gets a single report by its ID.
-* **Access:** Public
-* **Success Response:** `200 OK` with the report object.
-* **Error Response:** `404 Not Found`.
+---
+## 4. Event Endpoints
 
-#### `PUT /api/reports/:id/status`
-* **Description:** Updates the status of a report.
-* **Access:** Private (Authority, Admin)
-* **Request Body:** `application/json`
+### `POST /api/events`
+Creates a new community event. The backend AI generates an engaging title and description from the `idea`.
+
+* **Access:** Private
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body:**
     ```json
     {
-      "status": "In Progress"
+        "idea": "Cleanup drive at the city park next Saturday morning",
+        "eventDate": "2025-09-27T09:00:00.000Z",
+        "latitude": "23.4143",
+        "longitude": "85.4354"
     }
     ```
-* **Success Response:** `200 OK`.
+* **Success Response (`201 Created`):** Returns the new event object with AI-generated details.
 
-#### `POST /api/reports/:id/upvote`
-* **Description:** Toggles an upvote for a report.
-* **Access:** Private
-* **Success Response:** `200 OK`.
+### `GET /api/events`
+Retrieves a list of all upcoming events.
 
-### 4. Comments
-
-#### `POST /api/reports/:reportId/comments`
-* **Description:** Adds a new comment to a specific report.
-* **Access:** Private
-* **Request Body:** `application/json`
-    ```json
-    {
-      "text": "This is a major issue, thanks for reporting."
-    }
-    ```
-* **Success Response:** `201 Created` with the new comment object.
-
-#### `GET /api/reports/:reportId/comments`
-* **Description:** Gets all comments for a specific report.
 * **Access:** Public
-* **Success Response:** `200 OK` with an array of comment objects.
+* **Success Response (`200 OK`):** Returns an array of event objects.
 
-### 5. Notifications
+### `GET /api/events/:id`
+Retrieves a single event by its unique ID, populating organizer and attendee names.
 
-#### `GET /api/notifications`
-* **Description:** Gets all notifications for the logged-in user.
+* **Access:** Public
+* **Success Response (`200 OK`):** Returns the full event object.
+* **Error Response (`404 Not Found`):** `{ "message": "Event not found" }`
+
+### `POST /api/events/:id/join`
+Allows the authenticated user to join an event.
+
 * **Access:** Private
-* **Success Response:** `200 OK` with an array of notification objects.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):** `{ "message": "Successfully joined event" }`
 
-#### `PUT /api/notifications/read`
-* **Description:** Marks all unread notifications for the logged-in user as read.
+### `POST /api/events/:id/leave`
+Allows the authenticated user to leave an event.
+
 * **Access:** Private
-* **Success Response:** `200 OK`.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):** `{ "message": "Successfully left event" }`
+
+---
+## 5. Gamification Endpoints
+
+### `GET /api/leaderboard`
+Retrieves the top 10 users ranked by their engagement points.
+
+* **Access:** Public
+* **Success Response (`200 OK`):**
+    ```json
+    [
+        {
+            "_id": "68a33467bbc1341057d256aa",
+            "name": "Jane Doe",
+            "points": 152,
+            "level": "Civic Champion"
+        },
+        { "...": "..." }
+    ]
+    ```
+
+---
+## 6. Comments & Notifications
+
+### `POST /api/reports/:reportId/comments`
+Adds a comment to a specific report.
+
+* **Access:** Private
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body:**
+    ```json
+    { "text": "I agree, this has been an issue for a while." }
+    ```
+* **Success Response (`201 Created`):** Returns the new comment object.
+
+### `GET /api/reports/:reportId/comments`
+Retrieves all comments for a specific report.
+
+* **Access:** Public
+* **Success Response (`200 OK`):** Returns an array of comment objects.
+
+### `GET /api/notifications`
+Retrieves all notifications for the authenticated user.
+
+* **Access:** Private
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):** Returns an array of notification objects.
+
+### `PUT /api/notifications/read`
+Marks all unread notifications for the user as read.
+
+* **Access:** Private
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (`200 OK`):** `{ "message": "Notifications marked as read" }`
+
+---
+## 7. WebSocket API (Real-time SOS)
+
+The Distress Call feature uses a WebSocket connection, not standard REST endpoints.
+
+* **Connection:** Connect to the server URL (`http://localhost:5000`) with `userId` in the query.
+* **Emitting Events (from Client):**
+    * `updateLocation`: ` { userId, latitude, longitude } `
+    * `distressCall`: ` { userId, latitude, longitude, message } `
+* **Listening for Events (from Server):**
+    * `distressAlert`: Receives ` { fromUserId, latitude, longitude, summary, originalMessage } `

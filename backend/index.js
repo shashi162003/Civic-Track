@@ -21,8 +21,9 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"]
+        origin: "http://127.0.0.1:5500", // Must be the specific origin
+        methods: ["GET", "POST"],
+        credentials: true // Allow credentials
     }
 });
 const initializeSocket = require('./socket/socketHandler');
