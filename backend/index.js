@@ -4,6 +4,8 @@ const colors = require("colors");
 const connectDB = require("./config/database");
 const cookieParser = require("cookie-parser");
 const userRoutes = require("./routes/userRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const connectCloudinary = require("./config/cloudinary");
 
 const PORT = process.env.PORT || 5000;
 
@@ -13,8 +15,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 connectDB();
+connectCloudinary();
 
 app.use("/api/users", userRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get("/", (req, res) => {
     res.status(200).json({
