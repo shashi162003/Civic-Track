@@ -25,6 +25,23 @@ const userSchema = new mongoose.Schema({
         enum: ['Citizen', 'Authority', 'Admin'],
         default: 'Citizen'
     },
+    points: {
+        type: Number,
+        default: 0
+    },
+    level: {
+        type: String,
+        default: 'Newcomer'
+    },
+    lastKnownLocation: {
+        type: {
+            type: String,
+            enum: ['Point'],
+        },
+        coordinates: {
+            type: [Number]
+        }
+    },
     otp: {
         type: String,
     },
@@ -34,5 +51,7 @@ const userSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+userSchema.index({ lastKnownLocation: "2dsphere" });
 
 module.exports = mongoose.model('User', userSchema);

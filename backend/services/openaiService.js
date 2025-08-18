@@ -112,4 +112,56 @@ const parseSearchQuery = async (query) => {
     }
 };
 
-module.exports = { analyzeReport, moderateContent, findDuplicateReport, parseSearchQuery };
+const generateEventDetails = async (idea) => {
+    try {
+        const prompt = `
+            You are an event planning assistant for a community app. A user has provided a raw idea for an event.
+            Generate a JSON object with three keys: "title" (an engaging, short title for the event), "description" (a friendly, one-paragraph description encouraging people to join), and "tags" (an array of 3-5 relevant lowercase string tags, without the '#' symbol).
+
+            User's Idea: "${idea}"
+
+            JSON Response:
+        `;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo-0125",
+            response_format: { type: "json_object" },
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7,
+        });
+
+        return JSON.parse(response.choices[0].message.content);
+
+    } catch (error) {
+        console.error("Error generating event details with OpenAI:", error);
+        return {
+            title: idea,
+            description: "More details to be added by the organizer.",
+            tags: ["community"]
+        };
+    }
+};
+
+const summarizeDistressCall = async (message) => {
+    try {
+        const prompt = `
+            A user has sent a distress message. Summarize it into a concise, clear alert of no more than 10 words. If the message is unclear, state "User in distress, details unclear."
+
+            Original Message: "${message}"
+
+            Concise Alert:
+        `;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+        });
+
+        return response.choices[0].message.content;
+    } catch (error) {
+        return "User in distress, details unclear.";
+    }
+};
+
+module.exports = { analyzeReport, moderateContent, findDuplicateReport, parseSearchQuery, generateEventDetails, summarizeDistressCall };

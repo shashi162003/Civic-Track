@@ -16,8 +16,11 @@ const notificationSchema = new mongoose.Schema({
     },
     reportId: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
         ref: 'Report'
+    },
+    eventId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Event'
     }
 }, {
     timestamps: true

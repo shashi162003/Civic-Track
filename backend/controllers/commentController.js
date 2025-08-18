@@ -14,7 +14,7 @@ const addComment = async(req, res) => {
 
         if (report.user.toString() !== req.user.id.toString()) {
             const message = `A new comment has been added to your report: "${report.title}".`;
-            await createNotification(report.user, message, report._id);
+            await createNotification(report.user, message, { reportId: report._id });
         }
 
         const newComment = await Comment.create({
