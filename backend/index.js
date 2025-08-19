@@ -13,6 +13,7 @@ const gamificationRoutes = require("./routes/gamificationRoutes");
 const http = require('http');
 const { Server } = require("socket.io");
 const { startEventReminders } = require('./services/scheduler');
+const cors = require('cors');
 
 const PORT = process.env.PORT || 5000;
 
