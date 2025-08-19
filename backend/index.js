@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 const app = express();
 
-const origins = process.env.allowedOrigins.split(",");
+const origins = process.env.allowedOrigins.split(",").map(origin => origin.trim());
 
 const server = http.createServer(app);
 const io = new Server(server, {
