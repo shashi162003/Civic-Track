@@ -14,6 +14,7 @@ const http = require('http');
 const { Server } = require("socket.io");
 const { startEventReminders } = require('./services/scheduler');
 const cors = require('cors');
+const chatRoutes = require('./routes/chatRoutes');
 
 const PORT = process.env.PORT || 5000;
 
@@ -49,6 +50,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/leaderboard', gamificationRoutes);
+app.use('/api/chat', chatRoutes);
 
 startEventReminders();
 
