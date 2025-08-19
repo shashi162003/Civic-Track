@@ -31,6 +31,10 @@ const io = new Server(server, {
 const initializeSocket = require('./socket/socketHandler');
 initializeSocket(io);
 
+app.use(cors({
+    origin: origins,
+    credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser());
