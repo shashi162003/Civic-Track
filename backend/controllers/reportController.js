@@ -204,7 +204,7 @@ const updateReportStatus = async(req, res) => {
         const message = `The status of your report "${report.title}" has been updated to "${status}".`;
         await createNotification(report.user, message, { reportId: report._id });
 
-        return res.status(200).json({ message: 'Report status updated successfully' });
+        res.status(200).json({ message: 'Report status updated successfully', report });
     }
     catch(error){
         console.error(`Error updating report status: ${error.message}`.red);
